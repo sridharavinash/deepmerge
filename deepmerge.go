@@ -10,24 +10,40 @@ func merge(m1, m2, fptr interface{}) interface{} {
 	m2_t := reflect.ValueOf(m2)
 	ret_map := reflect.MakeMap(m1_t.Type())
 
-	x := reflect.New(m1_t.Type()).Elem()
-	y := reflect.New(m2_t.Type()).Elem()
-	translateRecursive(x, m1_t)
-	translateRecursive(y, m2_t)
+	cp_m1 := reflect.New(m1_t.Type()).Elem()
+	cp_m2 := reflect.New(m2_t.Type()).Elem()
+	translateRecursive(cp_m1, m1_t)
+	translateRecursive(cp_m2, m2_t)
 	fn := reflect.ValueOf(fptr).Elem()
-	fmt.Println(x, x.Interface(), y, ret_map, fn)
-	fmt.Printf("%T | %T | %T | %T | %T\n", x, x.Interface(), y, ret_map, fn)
-	for _, k := range x.MapKeys() {
-		v := x.MapIndex(k)
-		o_v := y.MapIndex(k)
+	//fmt.Println(cp_m1, cp_m1.Interface(), cp_m2, ret_map, fn)
+	//fmt.Printf("%T | %T | %T | %T | %T\n", cp_m1, cp_m1.Interface(), cp_m2, ret_map, fn)
+	for _, k := range cp_m1.MapKeys() {
+		v := cp_m1.MapIndex(k)
+		o_v := cp_m2.MapIndex(k)
 		fmt.Println(k, v, o_v)
-		in := []reflect.Value{v, o_v}
-		fmt.Printf("%v, %T\n", in, in)
-		zz := fn.Call(in)
-		fmt.Printf("Rsult: %v\n", zz[0])
-		ret_map.SetMapIndex(k, zz[0])
-	}
+		if v.Kind() == reflect.Map || o_v.Kind() == reflect.Map {
+			yy := merge(v.Interface(), o_v.Interface(), fptr)
+			fmt.Printf("yy: %[1]v | %[1]T\n", yy)
+			ret_map.SetMapIndex(k, reflect.ValueOf(yy))
+		} else {
+			if v.Kind() == reflect.Invalid {
+				ret_map.SetMapIndex(k, o_v)
+				continue
+			}
+			if o_v.Kind() == reflect.Invalid {
+				ret_map.SetMapIndex(k, v)
+				continue
+			}
 
+			fmt.Println(v.Kind(), o_v.Kind())
+			in := []reflect.Value{v, o_v}
+			fmt.Printf("%[1]v, %[1]T\n", in)
+			zz := fn.Call(in)
+			fmt.Printf("Rsult: %v\n", zz[0])
+			ret_map.SetMapIndex(k, zz[0])
+		}
+	}
+	fmt.Printf("returning Map: %[1]v | %[1]T\n", ret_map)
 	return ret_map.Interface()
 }
 
