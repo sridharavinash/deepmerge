@@ -5,7 +5,17 @@ import (
 	"reflect"
 )
 
-func merge(m1, m2, fptr interface{}) interface{} {
+type DeepMerge struct {
+	seenKeys map[interface{}]bool
+}
+
+func (d DeepMerge) Merge(m1, m2, fptr interface{}) interface{} {
+	d.seenKeys = make(map[interface{}]bool)
+	return d.merge(m1, m2, fptr)
+}
+
+func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
+	var allKeys []reflect.Value
 	m1_t := reflect.ValueOf(m1)
 	m2_t := reflect.ValueOf(m2)
 	ret_map := reflect.MakeMap(m1_t.Type())
@@ -15,15 +25,22 @@ func merge(m1, m2, fptr interface{}) interface{} {
 	translateRecursive(cp_m1, m1_t)
 	translateRecursive(cp_m2, m2_t)
 	fn := reflect.ValueOf(fptr).Elem()
-	//fmt.Println(cp_m1, cp_m1.Interface(), cp_m2, ret_map, fn)
-	//fmt.Printf("%T | %T | %T | %T | %T\n", cp_m1, cp_m1.Interface(), cp_m2, ret_map, fn)
-	for _, k := range cp_m1.MapKeys() {
+	allKeys = append(allKeys, cp_m1.MapKeys()...)
+	allKeys = append(allKeys, cp_m2.MapKeys()...)
+	fmt.Printf("allKeys: %v\n", allKeys)
+	for _, k := range allKeys {
+		if _, ok := d.seenKeys[k.Interface()]; ok {
+			fmt.Printf("Skipping key %v\n", k)
+			continue
+		}
+		fmt.Printf("Adding key %v\n", k)
+		//Set this key as processed/seen
+		d.seenKeys[k.Interface()] = true
 		v := cp_m1.MapIndex(k)
 		o_v := cp_m2.MapIndex(k)
-		fmt.Println(k, v, o_v)
-		if v.Kind() == reflect.Map || o_v.Kind() == reflect.Map {
-			yy := merge(v.Interface(), o_v.Interface(), fptr)
-			fmt.Printf("yy: %[1]v | %[1]T\n", yy)
+		if v.Kind() == reflect.Map && o_v.Kind() == reflect.Map {
+			yy := d.merge(v.Interface(), o_v.Interface(), fptr)
+			fmt.Printf("yy: %[1]v\n", yy)
 			ret_map.SetMapIndex(k, reflect.ValueOf(yy))
 		} else {
 			if v.Kind() == reflect.Invalid {
@@ -34,16 +51,16 @@ func merge(m1, m2, fptr interface{}) interface{} {
 				ret_map.SetMapIndex(k, v)
 				continue
 			}
-
-			fmt.Println(v.Kind(), o_v.Kind())
 			in := []reflect.Value{v, o_v}
-			fmt.Printf("%[1]v, %[1]T\n", in)
 			zz := fn.Call(in)
 			fmt.Printf("Rsult: %v\n", zz[0])
 			ret_map.SetMapIndex(k, zz[0])
 		}
+		fmt.Println(d.seenKeys)
+		fmt.Println(ret_map)
+
 	}
-	fmt.Printf("returning Map: %[1]v | %[1]T\n", ret_map)
+	fmt.Printf("returning Map: %[1]v\n\n --- \n", ret_map)
 	return ret_map.Interface()
 }
 
