@@ -82,7 +82,7 @@ func Test_basicsubtraction_nested(t *testing.T) {
 	assert.Equal(t, expect, got)
 }
 
-func Test_nested_vlue(t *testing.T) {
+func Test_nested_map1_missing_key(t *testing.T) {
 
 	map1 := map[string]map[string]int{
 		"a": map[string]int{"a1": 1, "a2": 2, "a3": -1},
@@ -103,7 +103,7 @@ func Test_nested_vlue(t *testing.T) {
 	got := d.Merge(map1, map2, &sub)
 	assert.Equal(t, expect, got)
 }
-func Test_nested_missingKey(t *testing.T) {
+func Test_nested_both_maps_missing_key(t *testing.T) {
 
 	map1 := map[string]map[string]int{
 		"a": map[string]int{"a1": 1, "a2": 2, "a3": -1},
@@ -112,14 +112,38 @@ func Test_nested_missingKey(t *testing.T) {
 
 	map2 := map[string]map[string]int{
 		"a": map[string]int{"a1": 3, "a2": 1},
-		"b": map[string]int{"b1": 1, "b2": 2},
 		"c": map[string]int{"c1": 1, "c2": 2},
 	}
 
 	expect := map[string]map[string]int{
 		"a": map[string]int{"a1": -2, "a2": 1, "a3": -1},
-		"b": map[string]int{"b1": 0, "b2": 0},
+		"b": map[string]int{"b1": 1, "b2": 2},
 		"c": map[string]int{"c1": 1, "c2": 2},
+	}
+
+	sub := func(a, b int) int { return a - b }
+	d := &DeepMerge{}
+	got := d.Merge(map1, map2, &sub)
+	assert.Equal(t, expect, got)
+}
+
+func Test_nested_same_sub_keys(t *testing.T) {
+
+	map1 := map[string]map[string]int{
+		"a": map[string]int{"a1": 1, "a2": 2, "a3": -1},
+		"b": map[string]int{"a1": 1, "a2": 2},
+	}
+
+	map2 := map[string]map[string]int{
+		"a": map[string]int{"a1": 3, "a2": 1},
+		"b": map[string]int{"a1": 1, "a2": 2},
+		"c": map[string]int{"a1": 1, "a2": 2},
+	}
+
+	expect := map[string]map[string]int{
+		"a": map[string]int{"a1": -2, "a2": 1, "a3": -1},
+		"b": map[string]int{"a1": 0, "a2": 0},
+		"c": map[string]int{"a1": 1, "a2": 2},
 	}
 
 	sub := func(a, b int) int { return a - b }

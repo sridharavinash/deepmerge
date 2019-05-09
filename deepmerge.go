@@ -6,7 +6,8 @@ import (
 )
 
 type DeepMerge struct {
-	seenKeys map[interface{}]bool
+	seenKeys  map[interface{}]bool
+	parentKey reflect.Value
 }
 
 func (d DeepMerge) Merge(m1, m2, fptr interface{}) interface{} {
@@ -19,7 +20,6 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 	m1_t := reflect.ValueOf(m1)
 	m2_t := reflect.ValueOf(m2)
 	ret_map := reflect.MakeMap(m1_t.Type())
-
 	cp_m1 := reflect.New(m1_t.Type()).Elem()
 	cp_m2 := reflect.New(m2_t.Type()).Elem()
 	translateRecursive(cp_m1, m1_t)
@@ -27,20 +27,24 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 	fn := reflect.ValueOf(fptr).Elem()
 	allKeys = append(allKeys, cp_m1.MapKeys()...)
 	allKeys = append(allKeys, cp_m2.MapKeys()...)
-	fmt.Printf("allKeys: %v\n", allKeys)
 	for _, k := range allKeys {
 		if _, ok := d.seenKeys[k.Interface()]; ok {
-			fmt.Printf("Skipping key %v\n", k)
 			continue
 		}
-		fmt.Printf("Adding key %v\n", k)
-		//Set this key as processed/seen
-		d.seenKeys[k.Interface()] = true
+		if (d.parentKey.IsValid()) && (d.parentKey.Len() != 0) {
+			keyplus := fmt.Sprintf("%v_%v", k.Interface(), d.parentKey.Interface())
+			d.seenKeys[keyplus] = true
+
+		} else {
+			//Set this key as processed/seen
+			d.seenKeys[k.Interface()] = true
+
+		}
 		v := cp_m1.MapIndex(k)
 		o_v := cp_m2.MapIndex(k)
 		if v.Kind() == reflect.Map && o_v.Kind() == reflect.Map {
+			d.parentKey = k
 			yy := d.merge(v.Interface(), o_v.Interface(), fptr)
-			fmt.Printf("yy: %[1]v\n", yy)
 			ret_map.SetMapIndex(k, reflect.ValueOf(yy))
 		} else {
 			if v.Kind() == reflect.Invalid {
@@ -53,14 +57,10 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 			}
 			in := []reflect.Value{v, o_v}
 			zz := fn.Call(in)
-			fmt.Printf("Rsult: %v\n", zz[0])
 			ret_map.SetMapIndex(k, zz[0])
 		}
-		fmt.Println(d.seenKeys)
-		fmt.Println(ret_map)
-
 	}
-	fmt.Printf("returning Map: %[1]v\n\n --- \n", ret_map)
+
 	return ret_map.Interface()
 }
 
