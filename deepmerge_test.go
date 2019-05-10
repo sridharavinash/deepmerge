@@ -312,13 +312,16 @@ func Test_struct_key_update_value(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_update_struct_vals(t *testing.T) {
+func Test_update_struct_exported_fields(t *testing.T) {
 	type person struct {
 		firstName string
 		lastName  string
 	}
 
+	// Only exported fields can be modified
+	// unexported fields are set to their Zero value
 	type details struct {
+		ssn     string
 		Age     int
 		Address string
 	}
@@ -331,11 +334,13 @@ func Test_update_struct_vals(t *testing.T) {
 	v1 := details{
 		Age:     23,
 		Address: "1 anywhere Ln, CA, 12342",
+		ssn:     "111-111-1111",
 	}
 
 	v2 := details{
 		Age:     32,
 		Address: "199 somewhere over the rainbow, MA 4212",
+		ssn:     "222-222-2222",
 	}
 
 	map1 := map[person]details{
@@ -350,6 +355,7 @@ func Test_update_struct_vals(t *testing.T) {
 		k1: details{
 			Age:     v1.Age,
 			Address: v2.Address,
+			ssn:     "",
 		},
 	}
 
@@ -362,6 +368,7 @@ func Test_update_struct_vals(t *testing.T) {
 
 	d := &DeepMerge{}
 	got, err := d.Merge(map1, map2, &f)
+	t.Log(got)
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
