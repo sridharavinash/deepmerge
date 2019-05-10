@@ -1,36 +1,68 @@
 package deepmerge
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
 
+// Deepmerge instantiates initial counters / keys for traversal
 type DeepMerge struct {
 	seenKeys  map[interface{}]bool
 	parentKey reflect.Value
 }
 
-func (d DeepMerge) Merge(m1, m2, fptr interface{}) interface{} {
+// Merge merges 2 maps by applying a fptr function to the values
+func (d DeepMerge) Merge(m1, m2, fptr interface{}) (interface{}, error) {
+
 	d.seenKeys = make(map[interface{}]bool)
-	return d.merge(m1, m2, fptr)
+
+	if m1 == nil && m2 != nil {
+		return m2, nil
+	}
+
+	if m1 != nil && m2 == nil {
+		return m1, nil
+	}
+
+	m1_t := reflect.ValueOf(m1).Type()
+	m2_t := reflect.ValueOf(m2).Type()
+	if m1_t != m2_t {
+		return nil, errors.New("Maps have to be of the same type")
+	}
+
+	return d.merge(m1, m2, fptr), nil
 }
 
 func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
+	// Lets keep track of the keys from the maps were iterating
 	var allKeys []reflect.Value
+
 	m1_t := reflect.ValueOf(m1)
 	m2_t := reflect.ValueOf(m2)
 	ret_map := reflect.MakeMap(m1_t.Type())
+
 	cp_m1 := reflect.New(m1_t.Type()).Elem()
 	cp_m2 := reflect.New(m2_t.Type()).Elem()
+
+	// Copy over the map values to the placeholder maps
+	// that will perform the fptr function operations
 	translateRecursive(cp_m1, m1_t)
 	translateRecursive(cp_m2, m2_t)
+
+	// Lets find out what type of function we have
+	// so that we can call it
 	fn := reflect.ValueOf(fptr).Elem()
+
 	allKeys = append(allKeys, cp_m1.MapKeys()...)
 	allKeys = append(allKeys, cp_m2.MapKeys()...)
+
+	// For each key we'll run the function block
 	for _, k := range allKeys {
 		if _, ok := d.seenKeys[k.Interface()]; ok {
 			continue
 		}
+		// If we're traversing a parent_key, then we'll need to add that key
 		if (d.parentKey.IsValid()) && (d.parentKey.Len() != 0) {
 			keyplus := fmt.Sprintf("%v_%v", k.Interface(), d.parentKey.Interface())
 			d.seenKeys[keyplus] = true
@@ -43,15 +75,17 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 		v := cp_m1.MapIndex(k)
 		o_v := cp_m2.MapIndex(k)
 		if v.Kind() == reflect.Map && o_v.Kind() == reflect.Map {
+			// If we have a map, lets iterative through
+			// recursively
 			d.parentKey = k
 			yy := d.merge(v.Interface(), o_v.Interface(), fptr)
 			ret_map.SetMapIndex(k, reflect.ValueOf(yy))
 		} else {
-			if v.Kind() == reflect.Invalid {
+			if !v.IsValid() && o_v.IsValid() {
 				ret_map.SetMapIndex(k, o_v)
 				continue
 			}
-			if o_v.Kind() == reflect.Invalid {
+			if !o_v.IsValid() && v.IsValid() {
 				ret_map.SetMapIndex(k, v)
 				continue
 			}
