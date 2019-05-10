@@ -6,16 +6,19 @@ import (
 	"reflect"
 )
 
-// Deepmerge instantiates initial counters / keys for traversal
+// DeepMerge instantiates initial counters / keys for traversal
 type DeepMerge struct {
-	seenKeys  map[interface{}]bool
+	// Stores the keys that we have processed as we iterate the maps
+	seenKeys map[interface{}]bool
+
+	// Keeps track of nested parent keys
 	parentKey reflect.Value
 }
 
-// Merge merges 2 maps by applying a fptr function to the values
+// Merge merges 2 maps by applying a fptr (function pointer) to the values
+// Example: Merge(map1, map2, &my_func)
+// where my_func := func(a,b int) int { return a + b }
 func (d DeepMerge) Merge(m1, m2, fptr interface{}) (interface{}, error) {
-
-	d.seenKeys = make(map[interface{}]bool)
 
 	if m1 == nil && m2 != nil {
 		return m2, nil
@@ -31,6 +34,7 @@ func (d DeepMerge) Merge(m1, m2, fptr interface{}) (interface{}, error) {
 		return nil, errors.New("Maps have to be of the same type")
 	}
 
+	d.seenKeys = make(map[interface{}]bool)
 	return d.merge(m1, m2, fptr), nil
 }
 
@@ -40,6 +44,8 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 
 	m1_t := reflect.ValueOf(m1)
 	m2_t := reflect.ValueOf(m2)
+
+	// This will store our final merged map
 	ret_map := reflect.MakeMap(m1_t.Type())
 
 	cp_m1 := reflect.New(m1_t.Type()).Elem()
@@ -59,6 +65,7 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 
 	// For each key we'll run the function block
 	for _, k := range allKeys {
+		// If we've already processed the key we'll skip
 		if _, ok := d.seenKeys[k.Interface()]; ok {
 			continue
 		}
@@ -68,19 +75,23 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 			d.seenKeys[keyplus] = true
 
 		} else {
-			//Set this key as processed/seen
 			d.seenKeys[k.Interface()] = true
-
 		}
+
+		// Get the value of the key from each map
 		v := cp_m1.MapIndex(k)
 		o_v := cp_m2.MapIndex(k)
+
+		// If we have a map, lets iterative through
+		// recursively
 		if v.Kind() == reflect.Map && o_v.Kind() == reflect.Map {
-			// If we have a map, lets iterative through
-			// recursively
 			d.parentKey = k
 			yy := d.merge(v.Interface(), o_v.Interface(), fptr)
 			ret_map.SetMapIndex(k, reflect.ValueOf(yy))
 		} else {
+			// If any of the keys traversed is invalid
+			// we'll ignore it and update the map to
+			// the values of the other key
 			if !v.IsValid() && o_v.IsValid() {
 				ret_map.SetMapIndex(k, o_v)
 				continue
@@ -89,12 +100,14 @@ func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
 				ret_map.SetMapIndex(k, v)
 				continue
 			}
+
+			// Everything looks good to call the function pointer
 			in := []reflect.Value{v, o_v}
 			zz := fn.Call(in)
+			// We'll only take the first return value
 			ret_map.SetMapIndex(k, zz[0])
 		}
 	}
-
 	return ret_map.Interface()
 }
 
@@ -158,5 +171,4 @@ func translateRecursive(copy, original reflect.Value) {
 	default:
 		copy.Set(original)
 	}
-
 }
