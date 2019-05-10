@@ -17,7 +17,7 @@ Typical usage:
 
     add := func(a, b int) int { return a + b }
     d := &DeepMerge{}
-    mergedMap := d.Merge(map1, map2, &add)
+    mergedMap, err := d.Merge(map1, map2, &add)
 ```
 
 Expected Output(`mergedMap`):
