@@ -29,4 +29,4 @@ Expected Output(`mergedMap`):
 	}
 ```
 
-There are more examples in `deepmerge_test.go`
+There are more examples in [deepmerge_test.go](https://github.com/sridharavinash/deepmerge/blob/master/deepmerge_test.go)
