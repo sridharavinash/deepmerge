@@ -37,3 +37,9 @@ There are more examples in [deepmerge_test.go](https://github.com/sridharavinash
 ```bash
 go get -u github.com/sridharavinash/deepmerge
 ```
+
+## Tests
+
+```bash
+go test ./...
+```
