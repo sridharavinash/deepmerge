@@ -16,7 +16,7 @@ Typical usage:
 	}
 
     add := func(a, b int) int { return a + b }
-	d := &DeepMerge{}
+    d := &DeepMerge{}
     mergedMap := d.Merge(map1, map2, &add)
 ```
 
