@@ -30,3 +30,10 @@ Expected Output(`mergedMap`):
 ```
 
 There are more examples in [deepmerge_test.go](https://github.com/sridharavinash/deepmerge/blob/master/deepmerge_test.go)
+
+## Installation
+
+
+```bash
+go get -u github.com/sridharavinash/deepmerge
+```
