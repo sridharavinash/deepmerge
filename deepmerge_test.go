@@ -1,6 +1,7 @@
 package deepmerge
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -220,4 +221,62 @@ func Test_nested_same_sub_keys(t *testing.T) {
 	d := &DeepMerge{}
 	got, _ := d.Merge(map1, map2, &sub)
 	assert.Equal(t, expect, got)
+}
+
+func Test_string_prefix(t *testing.T) {
+
+	map1 := map[string]string{
+		"k1": "value",
+		"k2": "value",
+		"k3": "value",
+	}
+
+	map2 := map[string]string{
+		"k1": "first",
+		"k2": "second",
+		"k3": "third",
+	}
+
+	expect := map[string]string{
+		"k1": "first_value",
+		"k2": "second_value",
+		"k3": "third_value",
+	}
+
+	f := func(a, b string) string { return b + "_" + a }
+	d := &DeepMerge{}
+	got, err := d.Merge(map1, map2, &f)
+	assert.Equal(t, expect, got)
+	assert.Nil(t, err)
+}
+
+func Test_use_import_strings_Join(t *testing.T) {
+
+	map1 := map[string]string{
+		"k1": "value",
+		"k2": "value",
+		"k3": "value",
+	}
+
+	map2 := map[string]string{
+		"k1": "first",
+		"k2": "second",
+		"k3": "third",
+	}
+
+	expect := map[string]string{
+		"k1": "first++value",
+		"k2": "second++value",
+		"k3": "third++value",
+	}
+
+	f := func(a, b string) string {
+		s := []string{b, a}
+		return strings.Join(s, "++")
+	}
+
+	d := &DeepMerge{}
+	got, err := d.Merge(map1, map2, &f)
+	assert.Equal(t, expect, got)
+	assert.Nil(t, err)
 }
