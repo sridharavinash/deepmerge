@@ -14,11 +14,7 @@ workflow "Lint" {
   resolves = ["docker://golangci/golangci-lint:latest"]
 }
 
-workflow "New workflow 1" {
-  on = "push"
-}
-
 action "docker://golangci/golangci-lint:latest" {
   uses = "docker://golangci/golangci-lint:latest"
-  args = "run"
+  args = ""
 }
