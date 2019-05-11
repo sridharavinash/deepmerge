@@ -319,7 +319,7 @@ func Test_update_struct_exported_fields(t *testing.T) {
 	}
 
 	// Only exported fields can be modified
-	// unexported fields are set to their Zero value
+	// unexported fields are set to their zero value
 	type details struct {
 		ssn     string
 		Age     int
