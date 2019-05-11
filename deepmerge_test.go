@@ -280,3 +280,95 @@ func Test_use_import_strings_Join(t *testing.T) {
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
+
+func Test_struct_key_update_value(t *testing.T) {
+	type mystruct struct {
+		firstName string
+		lastName  string
+	}
+
+	k1 := mystruct{
+		firstName: "John",
+		lastName:  "Doe",
+	}
+
+	map1 := map[mystruct]bool{
+		k1: false,
+	}
+
+	map2 := map[mystruct]bool{
+		k1: true,
+	}
+
+	expect := map[mystruct]bool{
+		k1: true,
+	}
+
+	f := func(a, b bool) bool { return b }
+
+	d := &DeepMerge{}
+	got, err := d.Merge(map1, map2, &f)
+	assert.Equal(t, expect, got)
+	assert.Nil(t, err)
+}
+
+func Test_update_struct_exported_fields(t *testing.T) {
+	type person struct {
+		firstName string
+		lastName  string
+	}
+
+	// Only exported fields can be modified
+	// unexported fields are set to their zero value
+	type details struct {
+		ssn     string
+		Age     int
+		Address string
+	}
+
+	k1 := person{
+		firstName: "John",
+		lastName:  "Doe",
+	}
+
+	v1 := details{
+		Age:     23,
+		Address: "1 anywhere Ln, CA, 12342",
+		ssn:     "111-111-1111",
+	}
+
+	v2 := details{
+		Age:     32,
+		Address: "199 somewhere over the rainbow, MA 4212",
+		ssn:     "222-222-2222",
+	}
+
+	map1 := map[person]details{
+		k1: v1,
+	}
+
+	map2 := map[person]details{
+		k1: v2,
+	}
+
+	expect := map[person]details{
+		k1: details{
+			Age:     v1.Age,
+			Address: v2.Address,
+			ssn:     "",
+		},
+	}
+
+	f := func(a, b details) details {
+		return details{
+			Age:     a.Age,
+			Address: b.Address,
+		}
+	}
+
+	d := &DeepMerge{}
+	got, err := d.Merge(map1, map2, &f)
+	t.Log(got)
+	assert.Equal(t, expect, got)
+	assert.Nil(t, err)
+}

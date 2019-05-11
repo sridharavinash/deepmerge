@@ -146,7 +146,11 @@ func translateRecursive(copy, original reflect.Value) {
 	// If it is a struct we translate each field
 	case reflect.Struct:
 		for i := 0; i < original.NumField(); i += 1 {
-			translateRecursive(copy.Field(i), original.Field(i))
+			if copy.Field(i).CanSet() {
+				translateRecursive(copy.Field(i), original.Field(i))
+			} else {
+				fmt.Printf("WARNING: Cannot Set unexported fields. Type:%T ,Value:%v will be set to it's zero value.\n", original.Type().Field(i).Name, original.Field(i))
+			}
 		}
 
 	// If it is a slice we create a new slice and translate each element
