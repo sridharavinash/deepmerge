@@ -16,5 +16,6 @@ workflow "Lint" {
 
 action "docker://golangci/golangci-lint:latest" {
   uses = "docker://golangci/golangci-lint:latest"
-  args = ""
+  args = "run"
+  runs = "golangci-lint"
 }
