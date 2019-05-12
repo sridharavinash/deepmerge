@@ -372,3 +372,92 @@ func Test_update_struct_exported_fields(t *testing.T) {
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
+
+func Benchmark_depth1_maps(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		map1 := map[string]int{
+			"a": 10,
+			"b": 3,
+			"c": 12,
+		}
+
+		map2 := map[string]int{
+			"a": 3,
+			"b": 3,
+			"c": 2,
+		}
+
+		add := func(a, b int) int { return a + b }
+		d := &DeepMerge{}
+		_, _ = d.Merge(map1, map2, &add)
+	}
+}
+
+func Benchmark_nested_maps(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+
+		map1 := map[string]map[string]int{
+			"a": map[string]int{"a1": 1, "a2": 2, "a3": -1},
+			"b": map[string]int{"b1": 1, "b2": 2},
+			"c": map[string]int{"c1": 1, "c2": 2},
+		}
+
+		map2 := map[string]map[string]int{
+			"a": map[string]int{"a1": 3, "a2": 1},
+			"b": map[string]int{"b1": 1, "b2": 2},
+			"c": map[string]int{"c1": 1, "c2": 2},
+		}
+
+		add := func(a, b int) int { return a + b }
+		d := &DeepMerge{}
+		_, _ = d.Merge(map1, map2, &add)
+	}
+}
+
+func Benchmark_struct(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		type person struct {
+			firstName string
+			lastName  string
+		}
+
+		// Only exported fields can be modified
+		// unexported fields are set to their zero value
+		type details struct {
+			Age     int
+			Address string
+		}
+
+		k1 := person{
+			firstName: "John",
+			lastName:  "Doe",
+		}
+
+		v1 := details{
+			Age:     23,
+			Address: "1 anywhere Ln, CA, 12342",
+		}
+
+		v2 := details{
+			Age:     32,
+			Address: "199 somewhere over the rainbow, MA 4212",
+		}
+
+		map1 := map[person]details{
+			k1: v1,
+		}
+
+		map2 := map[person]details{
+			k1: v2,
+		}
+
+		add := func(a, b details) details {
+			return details{
+				Age:     (a.Age + b.Age),
+				Address: a.Address,
+			}
+		}
+		d := &DeepMerge{}
+		_, _ = d.Merge(map1, map2, &add)
+	}
+}
