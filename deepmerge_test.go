@@ -16,8 +16,12 @@ func Test_map1_is_nil(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, err := d.Merge(nil, map2, &sub)
+
+	d := &DeepMerge{
+		map1: nil,
+		map2: map2,
+	}
+	got, err := d.Merge(&sub)
 	assert.Equal(t, got, map2)
 	assert.Nil(t, err)
 }
@@ -31,8 +35,13 @@ func Test_map2_is_nil(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, nil, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: nil,
+	}
+
+	got, err := d.Merge(&sub)
 	assert.Equal(t, got, map1)
 	assert.Nil(t, err)
 }
@@ -51,8 +60,13 @@ func Test_fptr_is_basic_update(t *testing.T) {
 		"c": 22,
 	}
 	fp := func(a, b int) int { return b }
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &fp)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&fp)
 	assert.Equal(t, got, map2)
 	assert.Nil(t, err)
 }
@@ -71,8 +85,13 @@ func Test_maps_are_not_the_same_type(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&sub)
 	assert.Nil(t, got)
 	assert.Error(t, err)
 }
@@ -97,8 +116,13 @@ func Test_basicAddition_depth1(t *testing.T) {
 	}
 
 	add := func(a, b int) int { return a + b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &add)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&add)
 	assert.Equal(t, expect, got)
 }
 
@@ -122,8 +146,13 @@ func Test_basicsubtraction_depth1(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&sub)
 	assert.Equal(t, expect, got)
 }
 
@@ -148,8 +177,13 @@ func Test_basicsubtraction_nested(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&sub)
 	assert.Equal(t, expect, got)
 }
 
@@ -170,8 +204,13 @@ func Test_nested_map1_missing_key(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&sub)
 	assert.Equal(t, expect, got)
 }
 func Test_nested_both_maps_missing_key(t *testing.T) {
@@ -193,8 +232,13 @@ func Test_nested_both_maps_missing_key(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&sub)
 	assert.Equal(t, expect, got)
 }
 
@@ -218,8 +262,13 @@ func Test_nested_same_sub_keys(t *testing.T) {
 	}
 
 	sub := func(a, b int) int { return a - b }
-	d := &DeepMerge{}
-	got, _ := d.Merge(map1, map2, &sub)
+
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, _ := d.Merge(&sub)
 	assert.Equal(t, expect, got)
 }
 
@@ -244,8 +293,12 @@ func Test_string_prefix(t *testing.T) {
 	}
 
 	f := func(a, b string) string { return b + "_" + a }
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &f)
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&f)
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
@@ -275,8 +328,12 @@ func Test_use_import_strings_Join(t *testing.T) {
 		return strings.Join(s, "++")
 	}
 
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &f)
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&f)
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
@@ -306,8 +363,12 @@ func Test_struct_key_update_value(t *testing.T) {
 
 	f := func(a, b bool) bool { return b }
 
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &f)
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&f)
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
 }
@@ -366,8 +427,12 @@ func Test_update_struct_exported_fields(t *testing.T) {
 		}
 	}
 
-	d := &DeepMerge{}
-	got, err := d.Merge(map1, map2, &f)
+	d := &DeepMerge{
+		map1: map1,
+		map2: map2,
+	}
+
+	got, err := d.Merge(&f)
 	t.Log(got)
 	assert.Equal(t, expect, got)
 	assert.Nil(t, err)
@@ -388,8 +453,11 @@ func Benchmark_depth1_maps(b *testing.B) {
 		}
 
 		add := func(a, b int) int { return a + b }
-		d := &DeepMerge{}
-		_, _ = d.Merge(map1, map2, &add)
+		d := &DeepMerge{
+			map1: map1,
+			map2: map2,
+		}
+		_, _ = d.Merge(&add)
 	}
 }
 
@@ -409,8 +477,11 @@ func Benchmark_nested_maps(b *testing.B) {
 		}
 
 		add := func(a, b int) int { return a + b }
-		d := &DeepMerge{}
-		_, _ = d.Merge(map1, map2, &add)
+		d := &DeepMerge{
+			map1: map1,
+			map2: map2,
+		}
+		_, _ = d.Merge(&add)
 	}
 }
 
@@ -457,7 +528,10 @@ func Benchmark_struct(b *testing.B) {
 				Address: a.Address,
 			}
 		}
-		d := &DeepMerge{}
-		_, _ = d.Merge(map1, map2, &add)
+		d := &DeepMerge{
+			map1: map1,
+			map2: map2,
+		}
+		_, _ = d.Merge(&add)
 	}
 }

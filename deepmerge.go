@@ -8,6 +8,9 @@ import (
 
 // DeepMerge instantiates initial counters / keys for traversal
 type DeepMerge struct {
+	map1 interface{}
+	map2 interface{}
+
 	// Stores the keys that we have processed as we iterate the maps
 	seenKeys map[interface{}]bool
 
@@ -16,26 +19,28 @@ type DeepMerge struct {
 }
 
 // Merge merges 2 maps by applying a fptr (function pointer) to the values
-// Example: Merge(map1, map2, &my_func)
+// Example:
+// d := &DeepMerge{ map1 : some_map1, map2: some_map2}
+// d.Merge(&my_func)
 // where my_func := func(a,b int) int { return a + b }
-func (d DeepMerge) Merge(m1, m2, fptr interface{}) (interface{}, error) {
+func (d DeepMerge) Merge(fptr interface{}) (interface{}, error) {
 
-	if m1 == nil && m2 != nil {
-		return m2, nil
+	if d.map1 == nil && d.map2 != nil {
+		return d.map2, nil
 	}
 
-	if m1 != nil && m2 == nil {
-		return m1, nil
+	if d.map1 != nil && d.map2 == nil {
+		return d.map1, nil
 	}
 
-	m1_t := reflect.ValueOf(m1).Type()
-	m2_t := reflect.ValueOf(m2).Type()
+	m1_t := reflect.ValueOf(d.map1).Type()
+	m2_t := reflect.ValueOf(d.map2).Type()
 	if m1_t != m2_t {
 		return nil, errors.New("Maps have to be of the same type")
 	}
 
 	d.seenKeys = make(map[interface{}]bool)
-	return d.merge(m1, m2, fptr), nil
+	return d.merge(d.map1, d.map2, fptr), nil
 }
 
 func (d DeepMerge) merge(m1, m2, fptr interface{}) interface{} {
